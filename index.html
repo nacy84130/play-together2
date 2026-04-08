@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小跟班數值攻略</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f4ef;color:#1a1a18;min-height:100vh}
+.page{max-width:860px;margin:0 auto;padding:1.5rem 1rem 3rem}
+h1{font-size:20px;font-weight:500;margin-bottom:4px}
+.subtitle{font-size:13px;color:#888;margin-bottom:1.25rem}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem;align-items:center}
+.filter-bar{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:8px;border:0.5px solid #bbb;background:#fff;color:#555;cursor:pointer;transition:all .15s}
+.filter-btn.active{background:#e8e6de;color:#1a1a18;font-weight:500;border-color:#888}
+.action-btn{font-size:12px;padding:5px 14px;border-radius:8px;border:0.5px solid #bbb;background:#fff;color:#444;cursor:pointer;white-space:nowrap;transition:all .15s}
+.action-btn:hover{background:#eee}
+.action-btn.primary{background:#1a1a18;color:#f5f4ef;border-color:#1a1a18}
+.action-btn.primary:hover{background:#333}
+.table-wrap{overflow-x:auto;border-radius:12px;border:0.5px solid #ddd;background:#fff;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:580px}
+thead th{background:#f1efe8;color:#666;font-weight:500;font-size:12px;padding:8px 8px;text-align:center;border-bottom:0.5px solid #ddd;white-space:nowrap;user-select:none}
+thead th:first-child{text-align:left;min-width:140px}
+thead th.sortable{cursor:pointer}
+thead th.sortable:hover{color:#1a1a18}
+tbody tr{border-bottom:0.5px solid #eee}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#faf9f5}
+td{padding:8px 8px;text-align:center;vertical-align:middle}
+td:first-child{text-align:left;font-weight:500;font-size:13px}
+.pill{display:inline-block;font-size:12px;font-weight:500;border-radius:8px;padding:2px 7px;line-height:1.5}
+.stat-hp  {background:#FAECE7;color:#993C1D}
+.stat-int {background:#E6F1FB;color:#185FA5}
+.stat-cre {background:#EEEDFE;color:#534AB7}
+.stat-cha {background:#FBEAF0;color:#993556}
+.stat-luck{background:#FAEEDA;color:#854F0B}
+.stat-soc {background:#EAF3DE;color:#3B6D11}
+.stat-mor {background:#E1F5EE;color:#0F6E56}
+.empty{color:#ccc;font-size:12px}
+.note-txt{font-size:11px;color:#aaa;margin-top:2px}
+.edit-cell{width:44px}
+.edit-input{width:38px;font-size:12px;text-align:center;border:0.5px solid #ccc;border-radius:5px;padding:2px 4px;background:#fff;color:#1a1a18}
+.edit-input:focus{outline:none;border-color:#888}
+.row-actions{display:flex;gap:4px;justify-content:center}
+.icon-btn{background:none;border:none;cursor:pointer;color:#bbb;font-size:14px;padding:2px 4px;border-radius:4px;transition:color .15s}
+.icon-btn:hover{color:#555}
+.icon-btn.del:hover{color:#c0392b}
+.add-row-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border:0.5px solid #ddd;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.add-row-bar input[type=text]{font-size:13px;border:0.5px solid #ccc;border-radius:6px;padding:5px 8px;background:#fff;color:#1a1a18;width:130px}
+.add-row-bar input[type=number]{width:46px;font-size:12px;border:0.5px solid #ccc;border-radius:6px;padding:4px 4px;text-align:center;background:#fff;color:#1a1a18}
+.add-row-bar input:focus{outline:none;border-color:#888}
+.add-row-bar label{font-size:11px;color:#888;display:flex;flex-direction:column;align-items:center;gap:3px}
+.add-row-bar .sep{width:0.5px;height:28px;background:#ddd;flex-shrink:0}
+.footer{font-size:11px;color:#aaa;margin-top:4px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a18;color:#f5f4ef;font-size:13px;padding:8px 20px;border-radius:24px;opacity:0;pointer-events:none;transition:all .3s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mode-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.mode-label{font-size:12px;color:#888}
+.toggle{display:flex;border:0.5px solid #ccc;border-radius:8px;overflow:hidden}
+.toggle button{font-size:12px;padding:4px 12px;border:none;background:#fff;color:#666;cursor:pointer;transition:all .15s}
+.toggle button.active{background:#1a1a18;color:#fff}
+@media(max-width:540px){
+  .add-row-bar{flex-direction:column;align-items:flex-start}
+  .add-row-bar .sep{display:none}
+}
+@media(prefers-color-scheme:dark){
+  body{background:#1c1c1a;color:#e8e6de}
+  .filter-btn{background:#2c2c2a;color:#aaa;border-color:#555}
+  .filter-btn.active{background:#3a3a38;color:#e8e6de;border-color:#888}
+  .action-btn{background:#2c2c2a;color:#ccc;border-color:#555}
+  .action-btn:hover{background:#3a3a38}
+  .action-btn.primary{background:#e8e6de;color:#1a1a18;border-color:#e8e6de}
+  .action-btn.primary:hover{background:#ccc}
+  .table-wrap{background:#252523;border-color:#3a3a38}
+  thead th{background:#2c2c2a;color:#888;border-color:#3a3a38}
+  tbody tr{border-color:#333}
+  tbody tr:hover{background:#2a2a28}
+  .stat-hp  {background:#4A1B0C;color:#F0997B}
+  .stat-int {background:#042C53;color:#85B7EB}
+  .stat-cre {background:#26215C;color:#AFA9EC}
+  .stat-cha {background:#4B1528;color:#ED93B1}
+  .stat-luck{background:#412402;color:#EF9F27}
+  .stat-soc {background:#173404;color:#97C459}
+  .stat-mor {background:#04342C;color:#5DCAA5}
+  .empty{color:#555}
+  .note-txt{color:#666}
+  .edit-input{background:#333;color:#e8e6de;border-color:#555}
+  .add-row-bar{background:#252523;border-color:#3a3a38}
+  .add-row-bar input[type=text],.add-row-bar input[type=number]{background:#333;color:#e8e6de;border-color:#555}
+  .add-row-bar .sep{background:#3a3a38}
+  .icon-btn{color:#555}
+  .icon-btn:hover{color:#aaa}
+  .icon-btn.del:hover{color:#e74c3c}
+  .toggle{border-color:#555}
+  .toggle button{background:#2c2c2a;color:#888}
+  .toggle button.active{background:#e8e6de;color:#1a1a18}
+  .footer{color:#666}
+  .subtitle{color:#666}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>小跟班數值攻略</h1>
+  <p class="subtitle">點選能力分類可篩選排序，編輯模式可修改或新增數值</p>
+
+  <div class="mode-bar">
+    <span class="mode-label">模式</span>
+    <div class="toggle">
+      <button class="active" id="btn-view" onclick="setMode('view')">閱覽</button>
+      <button id="btn-edit" onclick="setMode('edit')">編輯</button>
+    </div>
+    <button class="action-btn primary" onclick="exportHTML()">下載分享版 ↓</button>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-bar" id="filters">
+      <button class="filter-btn active" data-stat="all">全部</button>
+      <button class="filter-btn" data-stat="hp">體力</button>
+      <button class="filter-btn" data-stat="int">智力</button>
+      <button class="filter-btn" data-stat="cre">創造力</button>
+      <button class="filter-btn" data-stat="cha">魅力</button>
+      <button class="filter-btn" data-stat="luck">運氣</button>
+      <button class="filter-btn" data-stat="soc">社會性</button>
+      <button class="filter-btn" data-stat="mor">道德</button>
+    </div>
+  </div>
+
+  <div id="add-row-area" style="display:none">
+    <div class="add-row-bar">
+      <label>地點名稱<input type="text" id="new-name" placeholder="例：游泳池" maxlength="20"></label>
+      <div class="sep"></div>
+      <label><span class="pill stat-hp">體力</span><input type="number" id="n-hp" min="0" max="99" value="0"></label>
+      <label><span class="pill stat-int">智力</span><input type="number" id="n-int" min="0" max="99" value="0"></label>
+      <label><span class="pill stat-cre">創造力</span><input type="number" id="n-cre" min="0" max="99" value="0"></label>
+      <label><span class="pill stat-cha">魅力</span><input type="number" id="n-cha" min="0" max="99" value="0"></label>
+      <label><span class="pill stat-luck">運氣</span><input type="number" id="n-luck" min="0" max="99" value="0"></label>
+      <label><span class="pill stat-soc">社會性</span><input type="number" id="n-soc" min="0" max="99" value="0"></label>
+      <label><span class="pill stat-mor">道德</span><input type="number" id="n-mor" min="0" max="99" value="0"></label>
+      <div class="sep"></div>
+      <button class="action-btn primary" onclick="addRow()">新增</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>地點／活動</th>
+          <th class="sortable" onclick="sortBy('hp')"><span class="pill stat-hp">體力</span></th>
+          <th class="sortable" onclick="sortBy('int')"><span class="pill stat-int">智力</span></th>
+          <th class="sortable" onclick="sortBy('cre')"><span class="pill stat-cre">創造力</span></th>
+          <th class="sortable" onclick="sortBy('cha')"><span class="pill stat-cha">魅力</span></th>
+          <th class="sortable" onclick="sortBy('luck')"><span class="pill stat-luck">運氣</span></th>
+          <th class="sortable" onclick="sortBy('soc')"><span class="pill stat-soc">社會性</span></th>
+          <th class="sortable" onclick="sortBy('mor')"><span class="pill stat-mor">道德</span></th>
+          <th id="action-col" style="display:none;font-size:11px;color:#aaa;font-weight:400">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <p class="footer" id="footer-note">* 恐龍公園有一項數值待補齊　　點欄位標題可依該能力排序</p>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let data = [
+  {id:1, name:"搭船",           hp:0,int:0,cre:0,cha:3,luck:4,soc:0,mor:0},
+  {id:2, name:"摩天輪",         hp:1,int:0,cre:1,cha:1,luck:3,soc:0,mor:0},
+  {id:3, name:"足球場",         hp:2,int:0,cre:0,cha:0,luck:4,soc:4,mor:0},
+  {id:4, name:"遊戲（障礙物賽跑）",hp:2,int:0,cre:2,cha:2,luck:2,soc:3,mor:0},
+  {id:5, name:"睡覺",           hp:2,int:3,cre:0,cha:0,luck:0,soc:0,mor:0},
+  {id:6, name:"遊戲（無限之塔）",hp:2,int:0,cre:4,cha:2,luck:1,soc:1,mor:0},
+  {id:7, name:"棒球場",         hp:2,int:0,cre:0,cha:0,luck:3,soc:2,mor:0},
+  {id:8, name:"電影院",         hp:0,int:2,cre:7,cha:0,luck:0,soc:1,mor:1},
+  {id:9, name:"渡假村",         hp:0,int:0,cre:4,cha:2,luck:2,soc:0,mor:0},
+  {id:10,name:"肚子餓－餅乾",   hp:4,int:0,cre:0,cha:0,luck:0,soc:0,mor:0},
+  {id:11,name:"熊熊牛奶",       hp:4,int:0,cre:0,cha:0,luck:0,soc:0,mor:0},
+  {id:12,name:"吃藥",           hp:3,int:0,cre:0,cha:0,luck:3,soc:0,mor:0},
+  {id:13,name:"坐寵物",         hp:1,int:0,cre:0,cha:0,luck:2,soc:0,mor:0},
+  {id:14,name:"熱氣球",         hp:1,int:0,cre:2,cha:3,luck:3,soc:0,mor:0},
+  {id:15,name:"警察局",         hp:0,int:1,cre:0,cha:0,luck:0,soc:3,mor:5},
+  {id:16,name:"消防局",         hp:0,int:1,cre:0,cha:0,luck:0,soc:3,mor:5},
+  {id:17,name:"學校",           hp:0,int:4,cre:0,cha:0,luck:0,soc:4,mor:2},
+  {id:18,name:"恐龍公園",       hp:0,int:0,cre:1,cha:3,luck:2,soc:0,mor:1,note:true},
+];
+
+const keys=['hp','int','cre','cha','luck','soc','mor'];
+const cls={hp:'stat-hp',int:'stat-int',cre:'stat-cre',cha:'stat-cha',luck:'stat-luck',soc:'stat-soc',mor:'stat-mor'};
+let mode='view', activeFilter='all', sortKey=null, nextId=19;
+
+function setMode(m){
+  mode=m;
+  document.getElementById('btn-view').classList.toggle('active',m==='view');
+  document.getElementById('btn-edit').classList.toggle('active',m==='edit');
+  document.getElementById('add-row-area').style.display=m==='edit'?'block':'none';
+  document.getElementById('action-col').style.display=m==='edit'?'':'none';
+  render();
+}
+
+function sortBy(k){
+  sortKey=k; activeFilter=k;
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.stat===k);
+  });
+  render();
+}
+
+document.getElementById('filters').addEventListener('click',e=>{
+  const btn=e.target.closest('.filter-btn');
+  if(!btn)return;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  activeFilter=btn.dataset.stat;
+  sortKey=activeFilter==='all'?null:activeFilter;
+  render();
+});
+
+function render(){
+  let rows=[...data];
+  if(activeFilter!=='all') rows=rows.filter(r=>r[activeFilter]>0);
+  if(sortKey) rows.sort((a,b)=>(b[sortKey]||0)-(a[sortKey]||0));
+
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML=rows.map(row=>{
+    const cells=keys.map(k=>{
+      if(mode==='edit'){
+        return `<td class="edit-cell"><input class="edit-input" type="number" min="0" max="99" value="${row[k]||0}" onchange="updateVal(${row.id},'${k}',this.value)"></td>`;
+      }
+      return row[k]>0
+        ?`<td><span class="pill ${cls[k]}">+${row[k]}</span></td>`
+        :`<td><span class="empty">—</span></td>`;
+    }).join('');
+
+    const namecell=mode==='edit'
+      ?`<td><input style="font-size:13px;border:0.5px solid #ccc;border-radius:5px;padding:3px 6px;width:130px;background:inherit;color:inherit" value="${row.name}" onchange="updateVal(${row.id},'name',this.value)">${row.note?'<div class="note-txt">※ 數值待確認</div>':''}</td>`
+      :`<td>${row.name}${row.note?'<div class="note-txt">※ 數值待確認</div>':''}</td>`;
+
+    const actioncell=mode==='edit'
+      ?`<td><div class="row-actions"><button class="icon-btn del" title="刪除" onclick="deleteRow(${row.id})">✕</button></div></td>`
+      :'';
+
+    return `<tr>${namecell}${cells}${actioncell}</tr>`;
+  }).join('');
+}
+
+function updateVal(id,key,val){
+  const row=data.find(r=>r.id===id);
+  if(!row)return;
+  if(key==='name') row.name=val.trim()||row.name;
+  else row[key]=Math.max(0,Math.min(99,parseInt(val)||0));
+}
+
+function deleteRow(id){
+  data=data.filter(r=>r.id!==id);
+  render();
+}
+
+function addRow(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){showToast('請輸入地點名稱');return;}
+  const row={id:nextId++,name};
+  keys.forEach(k=>{ row[k]=Math.max(0,parseInt(document.getElementById('n-'+k).value)||0); });
+  data.push(row);
+  document.getElementById('new-name').value='';
+  keys.forEach(k=>{ document.getElementById('n-'+k).value=0; });
+  render();
+  showToast('已新增：'+name);
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function exportHTML(){
+  const snapshot=JSON.parse(JSON.stringify(data));
+  const rows=snapshot.map(row=>{
+    const cells=keys.map(k=>row[k]>0
+      ?`<td><span class="pill ${cls[k]}">+${row[k]}</span></td>`
+      :`<td><span class="empty">—</span></td>`).join('');
+    return `<tr><td>${row.name}${row.note?'<div class="note-txt">※ 數值待確認</div>':''}</td>${cells}</tr>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html>
+<html lang="zh-TW"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>小跟班數值攻略</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f5f4ef;color:#1a1a18;padding:1.5rem 1rem 3rem}
+.wrap{max-width:860px;margin:0 auto}
+h1{font-size:20px;font-weight:500;margin-bottom:4px}
+p.sub{font-size:13px;color:#888;margin-bottom:1rem}
+.filter-bar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:8px;border:0.5px solid #bbb;background:#fff;color:#555;cursor:pointer}
+.filter-btn.active{background:#e8e6de;color:#1a1a18;font-weight:500;border-color:#888}
+.table-wrap{overflow-x:auto;border-radius:12px;border:0.5px solid #ddd;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+thead th{background:#f1efe8;color:#666;font-weight:500;font-size:12px;padding:8px;text-align:center;border-bottom:0.5px solid #ddd;white-space:nowrap;cursor:pointer}
+thead th:first-child{text-align:left}
+tbody tr{border-bottom:0.5px solid #eee}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#faf9f5}
+td{padding:8px;text-align:center;vertical-align:middle}
+td:first-child{text-align:left;font-weight:500}
+.pill{display:inline-block;font-size:12px;font-weight:500;border-radius:8px;padding:2px 7px;line-height:1.5}
+.stat-hp{background:#FAECE7;color:#993C1D}
+.stat-int{background:#E6F1FB;color:#185FA5}
+.stat-cre{background:#EEEDFE;color:#534AB7}
+.stat-cha{background:#FBEAF0;color:#993556}
+.stat-luck{background:#FAEEDA;color:#854F0B}
+.stat-soc{background:#EAF3DE;color:#3B6D11}
+.stat-mor{background:#E1F5EE;color:#0F6E56}
+.empty{color:#ccc;font-size:12px}
+.note-txt{font-size:11px;color:#aaa;margin-top:2px}
+.footer{font-size:11px;color:#aaa;margin-top:8px}
+@media(prefers-color-scheme:dark){
+body{background:#1c1c1a;color:#e8e6de}
+.filter-btn{background:#2c2c2a;color:#aaa;border-color:#555}
+.filter-btn.active{background:#3a3a38;color:#e8e6de;border-color:#888}
+.table-wrap{background:#252523;border-color:#3a3a38}
+thead th{background:#2c2c2a;color:#888;border-color:#3a3a38}
+tbody tr{border-color:#333}
+tbody tr:hover{background:#2a2a28}
+.stat-hp{background:#4A1B0C;color:#F0997B}
+.stat-int{background:#042C53;color:#85B7EB}
+.stat-cre{background:#26215C;color:#AFA9EC}
+.stat-cha{background:#4B1528;color:#ED93B1}
+.stat-luck{background:#412402;color:#EF9F27}
+.stat-soc{background:#173404;color:#97C459}
+.stat-mor{background:#04342C;color:#5DCAA5}
+.empty{color:#555}
+p.sub,.footer,.note-txt{color:#666}}
+</style></head><body><div class="wrap">
+<h1>小跟班數值攻略</h1>
+<p class="sub">點選能力欄位可篩選排序</p>
+<div class="filter-bar" id="filters">
+<button class="filter-btn active" data-stat="all">全部</button>
+<button class="filter-btn" data-stat="hp">體力</button>
+<button class="filter-btn" data-stat="int">智力</button>
+<button class="filter-btn" data-stat="cre">創造力</button>
+<button class="filter-btn" data-stat="cha">魅力</button>
+<button class="filter-btn" data-stat="luck">運氣</button>
+<button class="filter-btn" data-stat="soc">社會性</button>
+<button class="filter-btn" data-stat="mor">道德</button>
+</div>
+<div class="table-wrap"><table>
+<thead><tr>
+<th>地點／活動</th>
+<th onclick="sb('hp')"><span class="pill stat-hp">體力</span></th>
+<th onclick="sb('int')"><span class="pill stat-int">智力</span></th>
+<th onclick="sb('cre')"><span class="pill stat-cre">創造力</span></th>
+<th onclick="sb('cha')"><span class="pill stat-cha">魅力</span></th>
+<th onclick="sb('luck')"><span class="pill stat-luck">運氣</span></th>
+<th onclick="sb('soc')"><span class="pill stat-soc">社會性</span></th>
+<th onclick="sb('mor')"><span class="pill stat-mor">道德</span></th>
+</tr></thead>
+<tbody id="tb">${rows}</tbody>
+</table></div>
+<p class="footer">* 恐龍公園有一項數值待補齊 　點欄位標題可排序</p>
+</div>
+<script>
+var D=${JSON.stringify(snapshot)};
+var keys=['hp','int','cre','cha','luck','soc','mor'];
+var cls={hp:'stat-hp',int:'stat-int',cre:'stat-cre',cha:'stat-cha',luck:'stat-luck',soc:'stat-soc',mor:'stat-mor'};
+var af='all',sk=null;
+function r(){
+var rows=[...D];
+if(af!=='all')rows=rows.filter(x=>x[af]>0);
+if(sk)rows.sort((a,b)=>(b[sk]||0)-(a[sk]||0));
+document.getElementById('tb').innerHTML=rows.map(row=>{
+var cells=keys.map(k=>row[k]>0?'<td><span class="pill '+cls[k]+'">+'+row[k]+'</span></td>':'<td><span class="empty">—</span></td>').join('');
+return '<tr><td>'+row.name+(row.note?'<div class="note-txt">※ 數值待確認</div>':'')+'</td>'+cells+'</tr>';
+}).join('');
+}
+function sb(k){sk=k;af=k;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.stat===k));r();}
+document.getElementById('filters').addEventListener('click',function(e){var b=e.target.closest('.filter-btn');if(!b)return;document.querySelectorAll('.filter-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');af=b.dataset.stat;sk=af==='all'?null:af;r();});
+<\/script></body></html>`;
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='小跟班數值攻略.html';
+  a.click();
+  showToast('已下載！可直接傳給朋友');
+}
+
+render();
+</script>
+</body>
+</html>
